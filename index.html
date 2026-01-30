@@ -6,14 +6,15 @@
     <title>One More Night: The Preset Collection</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #22c55e;
         }
 
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex;
@@ -25,28 +26,30 @@
         .container {
             background: var(--card);
             width: 100%;
-            max-width: 450px;
+            max-width: 500px;
             padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
         }
 
         h2 {
             margin-top: 0;
             font-size: 1.5rem;
-            border-bottom: 2px solid #f1f5f9;
+            border-bottom: 1px solid #334155;
             padding-bottom: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            letter-spacing: -0.025em;
         }
 
         #status-dot {
-            height: 10px;
-            width: 10px;
-            background-color: #cbd5e1;
+            height: 12px;
+            width: 12px;
+            background-color: #475569;
             border-radius: 50%;
-            display: inline-block;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
         }
 
         ul {
@@ -55,41 +58,89 @@
             margin: 0;
         }
 
-        li {
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            background: #f1f5f9;
-            border-radius: 8px;
-            font-weight: 500;
+        .preset-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #334155;
+            border-radius: 12px;
             transition: all 0.2s ease;
         }
 
-        li:hover {
-            background: #e2e8f0;
-            transform: translateX(4px);
+        .preset-item:hover {
+            background: #475569;
+            transform: translateY(-2px);
         }
 
-        .error { color: #ef4444; font-size: 0.9rem; }
+        .preset-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .copy-btn.success {
+            background: var(--accent);
+        }
+
+        .error { color: #f87171; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>
-            The Preset Collection
+            One More Night Presets
             <span id="status-dot"></span>
         </h2>
         
         <ul id="list-container">
-            <li>Loading presets...</li>
+            <li style="text-align: center; padding: 20px; color: #94a3b8;">Fetching data from GitHub...</li>
         </ul>
     </div>
 
     <script>
         const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/Gamer0Mertcan/One-More-Night-The-Preset-Collection/refs/heads/main/data.json';
 
-        function preset(name /*preset name*/, str /*preset string code to import to the actual roblox game*/) {
-            return "<div style=></div>";
+        // Function to create a list item element
+        function createPresetItem(name, codeString) {
+            const li = document.createElement('li');
+            li.className = 'preset-item';
+
+            li.innerHTML = `
+                <span class="preset-name">${name}</span>
+                <button class="copy-btn" onclick="copyPreset('${codeString}', this)">Copy</button>
+            `;
+            return li;
+        }
+
+        // Copy functionality
+        async function copyPreset(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalText = button.innerText;
+                button.innerText = 'Copied!';
+                button.classList.add('success');
+                
+                setTimeout(() => {
+                    button.innerText = originalText;
+                    button.classList.remove('success');
+                }, 2000);
+            } catch (err) {
+                alert('Failed to copy text.');
+            }
         }
 
         async function fetchPresets() {
@@ -98,25 +149,24 @@
 
             try {
                 const response = await fetch(GITHUB_RAW_DATA_URL);
-                
-                if (!response.ok) throw new Error('Network failed');
+                if (!response.ok) throw new Error('Failed to reach GitHub');
 
                 const data = await response.json();
-                
-                // Clear the loading state
-                list.innerHTML = '';
+                list.innerHTML = ''; // Clear loading message
 
-                // Iterate and inject
                 data.forEach(item => {
-                    list.appendChild(preset(item["name"], item["string"]));
+                    if(item.name && item.string) {
+                        list.appendChild(createPresetItem(item.name, item.string));
+                    }
                 });
 
-                dot.style.backgroundColor = '#22c55e'; // Success green
+                dot.style.backgroundColor = '#22c55e'; // Connection OK
+                dot.style.boxShadow = '0 0 10px #22c55e';
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = '<li class="error">Failed to load presets.</li>';
-                dot.style.backgroundColor = '#ef4444'; // Error red
+                list.innerHTML = '<li class="error">⚠️ Could not load presets. Make sure your JSON format is correct.</li>';
+                dot.style.backgroundColor = '#ef4444'; // Connection Failed
             }
         }
 
