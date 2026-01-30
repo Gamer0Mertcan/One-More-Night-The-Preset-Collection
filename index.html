@@ -37,14 +37,35 @@
             border: 1px solid #334155;
         }
 
-        h2 {
-            margin-top: 0;
-            font-size: 1.5rem;
+        .header {
             border-bottom: 1px solid #334155;
             padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        #search-input:focus {
+            border-color: var(--primary);
         }
 
         #status-dot {
@@ -118,7 +139,10 @@
 <body>
 
     <div class="container">
-        <h2>Presets Collection <span id="status-dot"></span></h2>
+        <div class="header">
+            <h2>Presets <span id="status-dot"></span></h2>
+            <input type="text" id="search-input" placeholder="Search presets by name...">
+        </div>
         <ul id="list-container">
             <li style="text-align: center; padding: 20px; color: var(--muted);">Connecting...</li>
         </ul>
@@ -142,24 +166,19 @@
         };
 
         const BOOL_KEYS = ["P_EquDis"];
-
         const PERCENTAGED_KEYS = ["C_Pwr", "C_Agr", "C_PGen"];
+
+        let allPresets = []; // Store raw strings here for filtering
 
         function createPresetItem(codeString) {
             const li = document.createElement('li');
             li.className = 'preset-item';
 
-            // 1. Parse all parts
             const parts = codeString.split(',').filter(p => p.includes('='));
-
-            // 2. Find and extract the Name
             const namePart = parts.find(p => p.startsWith('Name='));
             const displayName = namePart ? namePart.split('=')[1] : "Unnamed Preset";
-
-            // 3. Filter out the name so it doesn't show in the grid
             const technicalParts = parts.filter(p => !p.startsWith('Name='));
 
-            // 4. Sort: T (1), P (2), C (3)
             const prefixOrder = { 'T': 1, 'P': 2, 'C': 3 };
             technicalParts.sort((a, b) => {
                 const orderA = prefixOrder[a[0]] || 99;
@@ -167,7 +186,6 @@
                 return orderA - orderB;
             });
 
-            // 5. Build Grid HTML
             const detailsHtml = technicalParts.map(part => {
                 const [key, val] = part.split('=');
                 let colorVar = '--muted'; 
@@ -178,12 +196,9 @@
 
                 const label = KEY_NAMES[key] || key.slice(2);
                 let displayVal = val;
+
                 if (PERCENTAGED_KEYS.includes(key)) {
-                    if (key === "C_Agr") {
-                        displayVal = Math.Floor(val * 100) + "%"
-                    } else {
-                        displayVal = val + "%"
-                    }
+                    displayVal = (key === "C_Agr") ? Math.floor(val * 100) + "%" : val + "%";
                 }
                 if (BOOL_KEYS.includes(key)) {
                     displayVal = (val.trim() === "1") ? "Enabled" : "Disabled";
@@ -199,11 +214,9 @@
             li.innerHTML = `
                 <div class="header-row">
                     <span class="preset-name">${displayName}</span>
-                    <button class="copy-btn" onclick="copyPreset('${codeString}', this)">Copy String</button>
+                    <button class="copy-btn" onclick="copyPreset('${codeString}', this)">Copy</button>
                 </div>
-                <div class="details-grid">
-                    ${detailsHtml}
-                </div>
+                <div class="details-grid">${detailsHtml}</div>
             `;
             return li;
         }
@@ -221,32 +234,43 @@
             } catch (err) { alert('Copy failed'); }
         }
 
-        async function fetchPresets() {
+        function renderList(filterText = "") {
             const list = document.getElementById('list-container');
-            const dot = document.getElementById('status-dot');
+            list.innerHTML = '';
+            
+            const filtered = allPresets.filter(str => 
+                str.toLowerCase().includes(filterText.toLowerCase())
+            );
 
+            if (filtered.length === 0) {
+                list.innerHTML = '<li style="text-align: center; padding: 20px; color: var(--muted);">No presets found.</li>';
+                return;
+            }
+
+            filtered.forEach(str => list.appendChild(createPresetItem(str)));
+        }
+
+        async function fetchPresets() {
+            const dot = document.getElementById('status-dot');
             try {
                 const response = await fetch(GITHUB_RAW_DATA_URL);
                 const data = await response.json();
-                list.innerHTML = ''; 
+                
+                // Extract strings from objects if necessary
+                allPresets = data.map(item => (typeof item === 'string') ? item : item.string);
 
-                // If data is just a list of strings
-                data.forEach(str => {
-                    if(typeof str === 'string') {
-                        list.appendChild(createPresetItem(str));
-                    } else if (str.string) { 
-                        // Backwards compatibility if you haven't changed the JSON yet
-                        list.appendChild(createPresetItem(str.string));
-                    }
-                });
-
+                renderList();
                 dot.style.backgroundColor = '#22c55e';
                 dot.style.boxShadow = '0 0 10px #22c55e';
             } catch (err) {
-                list.innerHTML = '<li class="error">⚠️ Data Error: Check your JSON format.</li>';
+                document.getElementById('list-container').innerHTML = '<li class="error">⚠️ Data Error.</li>';
                 dot.style.backgroundColor = '#ef4444';
             }
         }
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            renderList(e.target.value);
+        });
 
         fetchPresets();
     </script>
