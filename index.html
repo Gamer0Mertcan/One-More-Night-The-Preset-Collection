@@ -12,7 +12,6 @@
             --text: #f8fafc;
             --accent: #22c55e;
             --muted: #94a3b8;
-            /* Label Colors */
             --color-t: #f87171; /* Red */
             --color-p: #c084fc; /* Purple */
             --color-c: #facc15; /* Yellow */
@@ -130,15 +129,23 @@
     <script>
         const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/Gamer0Mertcan/One-More-Night-The-Preset-Collection/refs/heads/main/data.json';
 
+        // Mapping dictionary for friendly names
+        const KEY_NAMES = {
+            "C_Pwr": "Power",
+            "C_PGen": "Power Generator",
+            "T_Jor": "Jordi",
+            "C_AIMax": "AI Difficulty Max",
+            "C_Agr": "Aggression"
+            // Add more here as needed
+        };
+
         function createPresetItem(name, codeString) {
             const li = document.createElement('li');
             li.className = 'preset-item';
 
-            // 1. Split and Filter
             const parts = codeString.split(',')
                 .filter(p => p.includes('=') && !p.startsWith('Name'));
 
-            // 2. Sort by Prefix Order: T_ then P_ then C_
             const prefixOrder = { 'T': 1, 'P': 2, 'C': 3 };
             parts.sort((a, b) => {
                 const orderA = prefixOrder[a[0]] || 99;
@@ -146,7 +153,6 @@
                 return orderA - orderB;
             });
 
-            // 3. Map to HTML with Colors
             const details = parts.map(part => {
                 const [key, val] = part.split('=');
                 let color = 'inherit';
@@ -155,7 +161,10 @@
                 else if (key.startsWith('P_')) color = 'var(--color-p)';
                 else if (key.startsWith('C_')) color = 'var(--color-c)';
 
-                return `<div class="detail-entry"><b style="color: ${color}">${key.slice(2)}:</b> <span>${val}</span></div>`;
+                // Use mapped name if exists, otherwise slice the prefix
+                const displayName = KEY_NAMES[key] || key.slice(2);
+
+                return `<div class="detail-entry"><b style="color: ${color}">${displayName}:</b> <span>${val}</span></div>`;
             }).join('');
 
             li.innerHTML = `
@@ -203,9 +212,8 @@
                 dot.style.backgroundColor = '#22c55e';
                 dot.style.boxShadow = '0 0 10px #22c55e';
             } catch (err) {
-                list.innerHTML = '<li class="error">⚠️ Syntax Error: Check GitHub data.json for trailing commas!</li>';
+                list.innerHTML = '<li class="error">⚠️ Syntax Error: Check GitHub data.json!</li>';
                 dot.style.backgroundColor = '#ef4444';
-                dot.style.boxShadow = '0 0 10px #ef4444';
             }
         }
 
