@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One More Night: The Preset Collection</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--card);
+            width: 100%;
+            max-width: 450px;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        li:hover {
+            background: #e2e8f0;
+            transform: translateX(4px);
+        }
+
+        .error { color: #ef4444; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>
+            Preset Collection
+            <span id="status-dot"></span>
+        </h2>
+        
+        <ul id="list-container">
+            <li>Loading presets...</li>
+        </ul>
+    </div>
+
+    <script>
+        const GITHUB_RAW_URL = 'REPLACE_WITH_YOUR_RAW_GITHUB_URL';
+
+        async function fetchPresets() {
+            const list = document.getElementById('list-container');
+            const dot = document.getElementById('status-dot');
+
+            try {
+                const response = await fetch(GITHUB_RAW_URL);
+                
+                if (!response.ok) throw new Error('Network failed');
+
+                const data = await response.json();
+                
+                // Clear the loading state
+                list.innerHTML = '';
+
+                // Iterate and inject
+                data.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    list.appendChild(li);
+                });
+
+                dot.style.backgroundColor = '#22c55e'; // Success green
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<li class="error">Failed to load presets. Check URL or JSON format.</li>';
+                dot.style.backgroundColor = '#ef4444'; // Error red
+            }
+        }
+
+        fetchPresets();
+    </script>
+</body>
+</html>
