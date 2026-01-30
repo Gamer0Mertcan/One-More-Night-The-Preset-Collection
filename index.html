@@ -155,7 +155,7 @@
                 else if (key.startsWith('P_')) color = 'var(--color-p)';
                 else if (key.startsWith('C_')) color = 'var(--color-c)';
 
-                return `<div class="detail-entry"><b style="color: ${color}">${key}:</b> <span>${val}</span></div>`;
+                return `<div class="detail-entry"><b style="color: ${color}">${key.slice(2)}:</b> <span>${val}</span></div>`;
             }).join('');
 
             li.innerHTML = `
