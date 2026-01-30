@@ -12,6 +12,10 @@
             --text: #f8fafc;
             --accent: #22c55e;
             --muted: #94a3b8;
+            /* Label Colors */
+            --color-t: #f87171; /* Red */
+            --color-p: #c084fc; /* Purple */
+            --color-c: #facc15; /* Yellow */
         }
 
         body {
@@ -27,7 +31,7 @@
         .container {
             background: var(--card);
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
             padding: 2rem;
             border-radius: 20px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
@@ -49,6 +53,7 @@
             width: 12px;
             background-color: #475569;
             border-radius: 50%;
+            transition: all 0.3s ease;
         }
 
         ul { list-style: none; padding: 0; margin: 0; }
@@ -57,10 +62,10 @@
             display: flex;
             flex-direction: column;
             padding: 16px;
-            margin-bottom: 16px;
-            background: #334155;
+            margin-bottom: 20px;
+            background: #242f42;
             border-radius: 12px;
-            border: 1px solid transparent;
+            border: 1px solid #334155;
             transition: all 0.2s ease;
         }
 
@@ -81,25 +86,32 @@
         .details-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4px;
+            gap: 6px;
             font-size: 0.75rem;
             color: var(--muted);
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
+            background: rgba(0,0,0,0.25);
+            padding: 12px;
             border-radius: 8px;
         }
 
-        .detail-entry { border-bottom: 1px solid #47556933; padding: 2px 0; }
+        .detail-entry { 
+            border-bottom: 1px solid #47556944; 
+            padding: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            padding-right: 8px;
+        }
 
         .copy-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
+            transition: 0.2s;
         }
 
         .copy-btn.success { background: var(--accent); }
@@ -109,9 +121,9 @@
 <body>
 
     <div class="container">
-        <h2>Presets <span id="status-dot"></span></h2>
+        <h2>Presets Collection <span id="status-dot"></span></h2>
         <ul id="list-container">
-            <li style="text-align: center; padding: 20px; color: var(--muted);">Connecting to GitHub...</li>
+            <li style="text-align: center; padding: 20px; color: var(--muted);">Syncing with GitHub...</li>
         </ul>
     </div>
 
@@ -122,14 +134,29 @@
             const li = document.createElement('li');
             li.className = 'preset-item';
 
-            // Parse the string into readable key-value pairs
-            // Logic: Split by comma, then split by equals sign
-            const details = codeString.split(',')
-                .filter(part => part.includes('='))
-                .map(part => {
-                    const [key, val] = part.split('=');
-                    return `<div class="detail-entry"><b>${key}:</b> ${val}</div>`;
-                }).join('');
+            // 1. Split and Filter
+            const parts = codeString.split(',')
+                .filter(p => p.includes('=') && !p.startsWith('Name'));
+
+            // 2. Sort by Prefix Order: T_ then P_ then C_
+            const prefixOrder = { 'T': 1, 'P': 2, 'C': 3 };
+            parts.sort((a, b) => {
+                const orderA = prefixOrder[a[0]] || 99;
+                const orderB = prefixOrder[b[0]] || 99;
+                return orderA - orderB;
+            });
+
+            // 3. Map to HTML with Colors
+            const details = parts.map(part => {
+                const [key, val] = part.split('=');
+                let color = 'inherit';
+                
+                if (key.startsWith('T_')) color = 'var(--color-t)';
+                else if (key.startsWith('P_')) color = 'var(--color-p)';
+                else if (key.startsWith('C_')) color = 'var(--color-c)';
+
+                return `<div class="detail-entry"><b style="color: ${color}">${key}:</b> <span>${val}</span></div>`;
+            }).join('');
 
             li.innerHTML = `
                 <div class="header-row">
@@ -153,7 +180,7 @@
                     button.innerText = old;
                     button.classList.remove('success');
                 }, 2000);
-            } catch (err) { alert('Clipboard failed'); }
+            } catch (err) { alert('Clipboard error'); }
         }
 
         async function fetchPresets() {
@@ -174,9 +201,11 @@
                 });
 
                 dot.style.backgroundColor = '#22c55e';
+                dot.style.boxShadow = '0 0 10px #22c55e';
             } catch (err) {
-                list.innerHTML = '<li class="error">⚠️ Syntax Error: Check your JSON commas!</li>';
+                list.innerHTML = '<li class="error">⚠️ Syntax Error: Check GitHub data.json for trailing commas!</li>';
                 dot.style.backgroundColor = '#ef4444';
+                dot.style.boxShadow = '0 0 10px #ef4444';
             }
         }
 
