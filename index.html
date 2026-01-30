@@ -11,6 +11,7 @@
             --card: #1e293b;
             --text: #f8fafc;
             --accent: #22c55e;
+            --muted: #94a3b8;
         }
 
         body {
@@ -41,7 +42,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            letter-spacing: -0.025em;
         }
 
         #status-dot {
@@ -49,98 +49,111 @@
             width: 12px;
             background-color: #475569;
             border-radius: 50%;
-            box-shadow: 0 0 8px rgba(0,0,0,0.5);
         }
 
-        ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        ul { list-style: none; padding: 0; margin: 0; }
 
         .preset-item {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             padding: 16px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             background: #334155;
             border-radius: 12px;
+            border: 1px solid transparent;
             transition: all 0.2s ease;
         }
 
         .preset-item:hover {
-            background: #475569;
+            border-color: var(--primary);
             transform: translateY(-2px);
         }
 
-        .preset-name {
-            font-weight: 600;
-            font-size: 1rem;
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
+
+        .preset-name { font-weight: 700; font-size: 1.1rem; color: #fff; }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .detail-entry { border-bottom: 1px solid #47556933; padding: 2px 0; }
 
         .copy-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 8px 14px;
-            border-radius: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
-            transition: background 0.3s;
         }
 
-        .copy-btn.success {
-            background: var(--accent);
-        }
-
+        .copy-btn.success { background: var(--accent); }
         .error { color: #f87171; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>
-            One More Night Presets
-            <span id="status-dot"></span>
-        </h2>
-        
+        <h2>Presets <span id="status-dot"></span></h2>
         <ul id="list-container">
-            <li style="text-align: center; padding: 20px; color: #94a3b8;">Fetching data from GitHub...</li>
+            <li style="text-align: center; padding: 20px; color: var(--muted);">Connecting to GitHub...</li>
         </ul>
     </div>
 
     <script>
         const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/Gamer0Mertcan/One-More-Night-The-Preset-Collection/refs/heads/main/data.json';
 
-        // Function to create a list item element
         function createPresetItem(name, codeString) {
             const li = document.createElement('li');
             li.className = 'preset-item';
 
+            // Parse the string into readable key-value pairs
+            // Logic: Split by comma, then split by equals sign
+            const details = codeString.split(',')
+                .filter(part => part.includes('='))
+                .map(part => {
+                    const [key, val] = part.split('=');
+                    return `<div class="detail-entry"><b>${key}:</b> ${val}</div>`;
+                }).join('');
+
             li.innerHTML = `
-                <span class="preset-name">${name}</span>
-                <button class="copy-btn" onclick="copyPreset('${codeString}', this)">Copy</button>
+                <div class="header-row">
+                    <span class="preset-name">${name}</span>
+                    <button class="copy-btn" onclick="copyPreset('${codeString}', this)">Copy String</button>
+                </div>
+                <div class="details-grid">
+                    ${details}
+                </div>
             `;
             return li;
         }
 
-        // Copy functionality
         async function copyPreset(text, button) {
             try {
                 await navigator.clipboard.writeText(text);
-                const originalText = button.innerText;
+                const old = button.innerText;
                 button.innerText = 'Copied!';
                 button.classList.add('success');
-                
                 setTimeout(() => {
-                    button.innerText = originalText;
+                    button.innerText = old;
                     button.classList.remove('success');
                 }, 2000);
-            } catch (err) {
-                alert('Failed to copy text.');
-            }
+            } catch (err) { alert('Clipboard failed'); }
         }
 
         async function fetchPresets() {
@@ -149,10 +162,10 @@
 
             try {
                 const response = await fetch(GITHUB_RAW_DATA_URL);
-                if (!response.ok) throw new Error('Failed to reach GitHub');
+                if (!response.ok) throw new Error();
 
                 const data = await response.json();
-                list.innerHTML = ''; // Clear loading message
+                list.innerHTML = ''; 
 
                 data.forEach(item => {
                     if(item.name && item.string) {
@@ -160,13 +173,10 @@
                     }
                 });
 
-                dot.style.backgroundColor = '#22c55e'; // Connection OK
-                dot.style.boxShadow = '0 0 10px #22c55e';
-
+                dot.style.backgroundColor = '#22c55e';
             } catch (err) {
-                console.error(err);
-                list.innerHTML = '<li class="error">⚠️ Could not load presets. Make sure your JSON format is correct.</li>';
-                dot.style.backgroundColor = '#ef4444'; // Connection Failed
+                list.innerHTML = '<li class="error">⚠️ Syntax Error: Check your JSON commas!</li>';
+                dot.style.backgroundColor = '#ef4444';
             }
         }
 
