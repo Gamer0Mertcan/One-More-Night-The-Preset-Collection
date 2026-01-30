@@ -12,10 +12,9 @@
             --text: #f8fafc;
             --accent: #22c55e;
             --muted: #94a3b8;
-            /* Category Colors */
-            --color-t: #f87171; /* Red */
-            --color-p: #c084fc; /* Purple */
-            --color-c: #facc15; /* Yellow */
+            --color-t: #f87171;
+            --color-p: #c084fc;
+            --color-c: #facc15;
         }
 
         body {
@@ -101,8 +100,6 @@
             padding-right: 8px;
         }
 
-        .detail-entry b { font-weight: 600; }
-
         .copy-btn {
             background: var(--primary);
             color: white;
@@ -112,7 +109,6 @@
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
-            transition: 0.2s;
         }
 
         .copy-btn.success { background: var(--accent); }
@@ -122,9 +118,9 @@
 <body>
 
     <div class="container">
-        <h2>The Preset Collection <span id="status-dot"></span></h2>
+        <h2>Presets Collection <span id="status-dot"></span></h2>
         <ul id="list-container">
-            <li style="text-align: center; padding: 20px; color: var(--muted);">Syncing with GitHub...</li>
+            <li style="text-align: center; padding: 20px; color: var(--muted);">Connecting...</li>
         </ul>
     </div>
 
@@ -147,21 +143,30 @@
 
         const BOOL_KEYS = ["P_EquDis"];
 
-        function createPresetItem(name, codeString) {
+        function createPresetItem(codeString) {
             const li = document.createElement('li');
             li.className = 'preset-item';
 
-            const parts = codeString.split(',')
-                .filter(p => p.includes('=') && !p.startsWith('Name'));
+            // 1. Parse all parts
+            const parts = codeString.split(',').filter(p => p.includes('='));
 
+            // 2. Find and extract the Name
+            const namePart = parts.find(p => p.startsWith('Name='));
+            const displayName = namePart ? namePart.split('=')[1] : "Unnamed Preset";
+
+            // 3. Filter out the name so it doesn't show in the grid
+            const technicalParts = parts.filter(p => !p.startsWith('Name='));
+
+            // 4. Sort: T (1), P (2), C (3)
             const prefixOrder = { 'T': 1, 'P': 2, 'C': 3 };
-            parts.sort((a, b) => {
+            technicalParts.sort((a, b) => {
                 const orderA = prefixOrder[a[0]] || 99;
                 const orderB = prefixOrder[b[0]] || 99;
                 return orderA - orderB;
             });
 
-            const details = parts.map(part => {
+            // 5. Build Grid HTML
+            const detailsHtml = technicalParts.map(part => {
                 const [key, val] = part.split('=');
                 let colorVar = '--muted'; 
                 
@@ -169,9 +174,7 @@
                 else if (key.startsWith('P_')) colorVar = 'var(--color-p)';
                 else if (key.startsWith('C_')) colorVar = 'var(--color-c)';
 
-                const displayName = KEY_NAMES[key] || key.slice(2);
-                
-                // Fixed Boolean Logic: Checking if the string value is "1"
+                const label = KEY_NAMES[key] || key.slice(2);
                 let displayVal = val;
                 if (BOOL_KEYS.includes(key)) {
                     displayVal = (val.trim() === "1") ? "Enabled" : "Disabled";
@@ -179,18 +182,18 @@
                 
                 return `
                     <div class="detail-entry" style="color: ${colorVar}">
-                        <b>${displayName}:</b> 
+                        <b>${label}:</b> 
                         <span style="filter: brightness(1.2);">${displayVal}</span>
                     </div>`;
             }).join('');
 
             li.innerHTML = `
                 <div class="header-row">
-                    <span class="preset-name">${name}</span>
+                    <span class="preset-name">${displayName}</span>
                     <button class="copy-btn" onclick="copyPreset('${codeString}', this)">Copy String</button>
                 </div>
                 <div class="details-grid">
-                    ${details}
+                    ${detailsHtml}
                 </div>
             `;
             return li;
@@ -199,11 +202,11 @@
         async function copyPreset(text, button) {
             try {
                 await navigator.clipboard.writeText(text);
-                const oldText = button.innerText;
+                const old = button.innerText;
                 button.innerText = 'Copied!';
                 button.classList.add('success');
                 setTimeout(() => {
-                    button.innerText = oldText;
+                    button.innerText = old;
                     button.classList.remove('success');
                 }, 2000);
             } catch (err) { alert('Copy failed'); }
@@ -215,23 +218,24 @@
 
             try {
                 const response = await fetch(GITHUB_RAW_DATA_URL);
-                if (!response.ok) throw new Error();
-
                 const data = await response.json();
                 list.innerHTML = ''; 
 
-                data.forEach(item => {
-                    if(item.name && item.string) {
-                        list.appendChild(createPresetItem(item.name, item.string));
+                // If data is just a list of strings
+                data.forEach(str => {
+                    if(typeof str === 'string') {
+                        list.appendChild(createPresetItem(str));
+                    } else if (str.string) { 
+                        // Backwards compatibility if you haven't changed the JSON yet
+                        list.appendChild(createPresetItem(str.string));
                     }
                 });
 
                 dot.style.backgroundColor = '#22c55e';
                 dot.style.boxShadow = '0 0 10px #22c55e';
             } catch (err) {
-                list.innerHTML = '<li class="error">⚠️ Syntax Error: Check GitHub data.json!</li>';
+                list.innerHTML = '<li class="error">⚠️ Data Error: Check your JSON format.</li>';
                 dot.style.backgroundColor = '#ef4444';
-                dot.style.boxShadow = '0 0 10px #ef4444';
             }
         }
 
