@@ -180,7 +180,7 @@
                 let displayVal = val;
                 if (PERCENTAGED_KEYS.includes(key)) {
                     if (key === "C_Agr") {
-                        displayVal = val * 100 + "%"
+                        displayVal = Math.Floor(val * 100) + "%"
                     } else {
                         displayVal = val + "%"
                     }
