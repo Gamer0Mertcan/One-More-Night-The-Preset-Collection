@@ -76,7 +76,7 @@
 
     <div class="container">
         <h2>
-            Preset Collection
+            The Preset Collection
             <span id="status-dot"></span>
         </h2>
         
@@ -86,14 +86,18 @@
     </div>
 
     <script>
-        const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/Gamer0Mertcan/One-More-Night-The-Preset-Collection/refs/heads/main/data.json';
+        const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/Gamer0Mertcan/One-More-Night-The-Preset-Collection/refs/heads/main/data.json';
+
+        function preset(name, str) {
+            return "<div style=></div>";
+        }
 
         async function fetchPresets() {
             const list = document.getElementById('list-container');
             const dot = document.getElementById('status-dot');
 
             try {
-                const response = await fetch(GITHUB_RAW_URL);
+                const response = await fetch(GITHUB_RAW_DATA_URL);
                 
                 if (!response.ok) throw new Error('Network failed');
 
@@ -104,16 +108,14 @@
 
                 // Iterate and inject
                 data.forEach(item => {
-                    const li = document.createElement('li');
-                    li.textContent = item;
-                    list.appendChild(li);
+                    list.appendChild(preset(item["name"], item["string"]));
                 });
 
                 dot.style.backgroundColor = '#22c55e'; // Success green
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = '<li class="error">Failed to load presets. Check URL or JSON format.</li>';
+                list.innerHTML = '<li class="error">Failed to load presets.</li>';
                 dot.style.backgroundColor = '#ef4444'; // Error red
             }
         }
