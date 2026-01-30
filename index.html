@@ -12,6 +12,7 @@
             --text: #f8fafc;
             --accent: #22c55e;
             --muted: #94a3b8;
+            /* Category Colors */
             --color-t: #f87171; /* Red */
             --color-p: #c084fc; /* Purple */
             --color-c: #facc15; /* Yellow */
@@ -85,10 +86,9 @@
         .details-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 6px;
+            gap: 8px;
             font-size: 0.75rem;
-            color: var(--muted);
-            background: rgba(0,0,0,0.25);
+            background: rgba(0,0,0,0.3);
             padding: 12px;
             border-radius: 8px;
         }
@@ -100,6 +100,8 @@
             justify-content: space-between;
             padding-right: 8px;
         }
+
+        .detail-entry b { font-weight: 600; }
 
         .copy-btn {
             background: var(--primary);
@@ -129,14 +131,14 @@
     <script>
         const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/Gamer0Mertcan/One-More-Night-The-Preset-Collection/refs/heads/main/data.json';
 
-        // Mapping dictionary for friendly names
+        // Friendly name mapping
         const KEY_NAMES = {
             "C_Pwr": "Power",
             "C_PGen": "Power Generator",
             "T_Jor": "Jordi",
-            "C_AIMax": "AI Difficulty Max",
-            "C_Agr": "Aggression"
-            // Add more here as needed
+            "C_AIMax": "AI Max",
+            "C_Agr": "Aggression",
+            "P_EquDis": "Equip Distance"
         };
 
         function createPresetItem(name, codeString) {
@@ -146,6 +148,7 @@
             const parts = codeString.split(',')
                 .filter(p => p.includes('=') && !p.startsWith('Name'));
 
+            // Sort: T (1), P (2), C (3)
             const prefixOrder = { 'T': 1, 'P': 2, 'C': 3 };
             parts.sort((a, b) => {
                 const orderA = prefixOrder[a[0]] || 99;
@@ -155,16 +158,19 @@
 
             const details = parts.map(part => {
                 const [key, val] = part.split('=');
-                let color = 'inherit';
+                let colorVar = '--muted'; // Default fallback
                 
-                if (key.startsWith('T_')) color = 'var(--color-t)';
-                else if (key.startsWith('P_')) color = 'var(--color-p)';
-                else if (key.startsWith('C_')) color = 'var(--color-c)';
+                if (key.startsWith('T_')) colorVar = 'var(--color-t)';
+                else if (key.startsWith('P_')) colorVar = 'var(--color-p)';
+                else if (key.startsWith('C_')) colorVar = 'var(--color-c)';
 
-                // Use mapped name if exists, otherwise slice the prefix
                 const displayName = KEY_NAMES[key] || key.slice(2);
 
-                return `<div class="detail-entry"><b style="color: ${color}">${displayName}:</b> <span>${val}</span></div>`;
+                return `
+                    <div class="detail-entry" style="color: ${colorVar}">
+                        <b>${displayName}:</b> 
+                        <span style="filter: brightness(1.2);">${val}</span>
+                    </div>`;
             }).join('');
 
             li.innerHTML = `
@@ -182,14 +188,14 @@
         async function copyPreset(text, button) {
             try {
                 await navigator.clipboard.writeText(text);
-                const old = button.innerText;
+                const oldText = button.innerText;
                 button.innerText = 'Copied!';
                 button.classList.add('success');
                 setTimeout(() => {
-                    button.innerText = old;
+                    button.innerText = oldText;
                     button.classList.remove('success');
                 }, 2000);
-            } catch (err) { alert('Clipboard error'); }
+            } catch (err) { alert('Copy failed'); }
         }
 
         async function fetchPresets() {
@@ -214,6 +220,7 @@
             } catch (err) {
                 list.innerHTML = '<li class="error">⚠️ Syntax Error: Check GitHub data.json!</li>';
                 dot.style.backgroundColor = '#ef4444';
+                dot.style.boxShadow = '0 0 10px #ef4444';
             }
         }
 
