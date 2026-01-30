@@ -143,6 +143,8 @@
 
         const BOOL_KEYS = ["P_EquDis"];
 
+        const PERCENTAGED_KEYS = ["C_Pwr", "C_Agr", "C_PGen"];
+
         function createPresetItem(codeString) {
             const li = document.createElement('li');
             li.className = 'preset-item';
@@ -176,6 +178,9 @@
 
                 const label = KEY_NAMES[key] || key.slice(2);
                 let displayVal = val;
+                if (PERCENTAGED_KEYS.includes(key)) {
+                    displayVal = val + "%"
+                }
                 if (BOOL_KEYS.includes(key)) {
                     displayVal = (val.trim() === "1") ? "Enabled" : "Disabled";
                 }
