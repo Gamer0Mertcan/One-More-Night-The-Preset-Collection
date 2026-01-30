@@ -179,7 +179,11 @@
                 const label = KEY_NAMES[key] || key.slice(2);
                 let displayVal = val;
                 if (PERCENTAGED_KEYS.includes(key)) {
-                    displayVal = val + "%"
+                    if (key === "C_Agr") {
+                        displayVal = val * 100 + "%"
+                    } else {
+                        displayVal = val + "%"
+                    }
                 }
                 if (BOOL_KEYS.includes(key)) {
                     displayVal = (val.trim() === "1") ? "Enabled" : "Disabled";
